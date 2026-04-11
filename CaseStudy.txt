@@ -1,0 +1,35 @@
+In this technical assessment, you will be required to demonstrate your proficiency in deploying two different types of projects: a MERN (MongoDB, Express.js, React, Node.js) stack application and a Python project.
+
+**Project 1: Deploy a MERN Stack Application**
+
+For the MERN stack project, a simple web application consisting of a React frontend, an Express.js backend, and a MongoDB database will be provided. Your task is to deploy this application to a cloud environment of your choice (e.g., AWS, HWC, GCP) using best practices for containerization and orchestration.
+
+**REQUIREMENTS**
+
+**Containerization:** Dockerize the application components (frontend, backend, database) using appropriate Docker images.
+
+**Orchestration:** Use a container orchestration tool (e.g., Kubernetes) to manage the deployment, scaling, and monitoring of the application.
+
+**CI/CD:** Implement a CI/CD pipeline using a tool such as Jenkins, GitLab CI/CD, or GitHub Actions. The pipeline should automate the build, test, and deployment of the application.
+
+**Logging and Alerts:** Implement logging for observability and configure alerts or notifications for critical events.
+
+**Evaluation Guidelines:**
+
+1. You are free to choose the cloud platforms, tools, and technologies you are most comfortable with, considering best practices and industry standards.
+2. Provide clear documentation detailing the deployment process, infrastructure setup, and any configuration steps.
+3. Your solution should be scalable, maintainable, and well-organized.
+4. Pay attention to security considerations and follow DevOps best practices.
+
+**SUBMISSION**
+
+Provide a GitHub repository that includes:
+
+1. Dockerfiles for the MERN stack components.
+2. Kubernetes configuration files to orchestrate the MERN stack.
+3. CI/CD pipeline configuration files for both projects.
+4. Infrastructure-as-Code scripts (e.g., Terraform, CloudFormation) to provision cloud resources.
+5. Documentation outlining the deployment process, architecture, and challenges encountered.
+6. Screenshots showing that the system is accessible via the web after deployment (e.g., frontend, backend API, or pages demonstrating that relevant services are running). These screenshots will be used during evaluation to verify that the deployment was successfully completed.
+
+Your solution will be evaluated based on completeness, adherence to best practices, and the overall quality of your deployment process.
