@@ -1,0 +1,41 @@
+services:
+  database:
+    image: mongo:7.0
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  backend:
+    build:
+      context: ./mern-project/server
+      dockerfile: Dockerfile
+    ports:
+      - "5050:5050"
+    environment:
+      - ATLAS_URI=mongodb://database:27017/sample_training
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./mern-project/client
+      dockerfile: Dockerfile
+      args:
+        # Since frontend runs in the user's browser, it accesses the backend via localhost
+        - REACT_APP_API_URL=http://localhost:5050
+    ports:
+      - "127.0.0.1:80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:

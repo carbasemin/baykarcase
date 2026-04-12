@@ -23,7 +23,7 @@ export default function Create() {
    // When a post request is sent to the create url, we'll add a new record to the database.
    const newPerson = { ...form };
 
-   await fetch("http://localhost:5050/record", {
+   await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5050"}/record`, {
      method: "POST",
      headers: {
        "Content-Type": "application/json",
