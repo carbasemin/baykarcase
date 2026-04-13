@@ -16,7 +16,7 @@ env:
   # Baked into the React static bundle at build time.
   # Ingress routes /api → backend service and strips the prefix before forwarding to Express.
   # See: nginx.ingress.kubernetes.io/rewrite-target annotation in k8s manifests.
-  REACT_APP_API_URL: http://baykarmernproject.emincarbas.com/api
+  REACT_APP_API_URL: https://baykarmernproject.emincarbas.com/api
 
 jobs:
   build-push:

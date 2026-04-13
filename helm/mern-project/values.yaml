@@ -1,0 +1,49 @@
+namespace: mern-project
+
+backend:
+  replicaCount: 1
+  image:
+    repository: 683134219558.dkr.ecr.eu-west-1.amazonaws.com/mern-project-backend
+    tag: "latest"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 5050
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: 683134219558.dkr.ecr.eu-west-1.amazonaws.com/mern-project-frontend
+    tag: "latest"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 128m
+      memory: 128Mi
+    requests:
+      cpu: 64m
+      memory: 64Mi
+
+ingress:
+  enabled: true
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+  hosts:
+    - host: baykarmernproject.emincarbas.com
+
+externalSecrets:
+  secretStoreName: "aws-secrets-manager"
+  atlasSecretName: "baykarcase/atlas-uri"

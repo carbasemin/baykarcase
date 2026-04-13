@@ -1,3 +1,4 @@
 result.png
 *.tfstate*
 .terraform/
+infra/terraform/secrets/terraform.tfvars
