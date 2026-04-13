@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "github_repo" {
   description = "GitHub repo in 'owner/name' format that is allowed to assume the CI role"
   type        = string
-  default     = "emincarbas/baykarcase"
+  default     = "carbasemin/baykarcase"
 }
 
 variable "ecr_image_retention_count" {

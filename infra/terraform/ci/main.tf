@@ -113,7 +113,7 @@ data "aws_iam_policy_document" "github_actions_trust" {
 resource "aws_iam_role" "github_ci" {
   name               = "baykarcase-github-ci"
   assume_role_policy = data.aws_iam_policy_document.github_actions_trust.json
-  description        = "Assumed by GitHub Actions (emincarbas/baykarcase, main branch) for ECR push"
+  description        = "Assumed by GitHub Actions (carbasemin/baykarcase, main branch) for ECR push"
 
   tags = var.common_tags
 }
