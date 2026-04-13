@@ -1,0 +1,76 @@
+name: CI — Build & Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+# Cancel any in-progress run for the same branch to avoid queuing up
+# multiple builds when commits are pushed quickly.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: eu-west-1
+  # Baked into the React static bundle at build time.
+  # Ingress routes /api → backend service and strips the prefix before forwarding to Express.
+  # See: nginx.ingress.kubernetes.io/rewrite-target annotation in k8s manifests.
+  REACT_APP_API_URL: http://baykarmernproject.emincarbas.com/api
+
+jobs:
+  build-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    # Required for OIDC token request
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Authenticate to AWS using OIDC — no long-lived credentials stored anywhere.
+      # The role is locked to this repo + main branch in Terraform.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Docker layer caching via GitHub Actions cache.
+      # Cuts rebuild time significantly for unchanged layers.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push — backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mern-project/server
+          file: ./mern-project/server/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/mern-project-backend:latest
+            ${{ steps.ecr-login.outputs.registry }}/mern-project-backend:${{ github.sha }}
+          cache-from: type=gha,scope=mern-backend
+          cache-to: type=gha,mode=max,scope=mern-backend
+
+      - name: Build & push — frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mern-project/client
+          file: ./mern-project/client/Dockerfile
+          push: true
+          build-args: |
+            REACT_APP_API_URL=${{ env.REACT_APP_API_URL }}
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/mern-project-frontend:latest
+            ${{ steps.ecr-login.outputs.registry }}/mern-project-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=mern-frontend
+          cache-to: type=gha,mode=max,scope=mern-frontend
