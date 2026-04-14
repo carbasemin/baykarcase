@@ -1,0 +1,10 @@
+namespace: python-etl
+
+image:
+  repository: python-etl
+  tag: latest
+  pullPolicy: IfNotPresent
+
+schedule: "0 * * * *"
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 1
