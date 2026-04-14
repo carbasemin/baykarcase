@@ -5,17 +5,12 @@ on:
     branches:
       - main
 
-# Cancel any in-progress run for the same branch to avoid queuing up
-# multiple builds when commits are pushed quickly.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   AWS_REGION: eu-west-1
-  # Baked into the React static bundle at build time.
-  # Ingress routes /api → backend service and strips the prefix before forwarding to Express.
-  # See: nginx.ingress.kubernetes.io/rewrite-target annotation in k8s manifests.
   REACT_APP_API_URL: https://baykarmernproject.emincarbas.com/api
 
 jobs:
@@ -23,7 +18,6 @@ jobs:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
 
-    # Required for OIDC token request
     permissions:
       id-token: write
       contents: read
@@ -32,8 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Authenticate to AWS using OIDC — no long-lived credentials stored anywhere.
-      # The role is locked to this repo + main branch in Terraform.
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -44,8 +36,6 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Docker layer caching via GitHub Actions cache.
-      # Cuts rebuild time significantly for unchanged layers.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
