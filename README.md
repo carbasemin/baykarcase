@@ -63,7 +63,31 @@ cd helm/mern-project/
 helm upgrade --install mern-project . --namespace mern-project --create-namespace
 ```
 
+### 4. Monitoring Stack
+The monitoring namespace (`monitoring`) contains the observability stack:
 
+**Components:**
+| Component | Description |
+|-----------|-------------|
+| Prometheus | Metrics collection (kube-prometheus-stack) |
+| Grafana | Dashboards & visualization |
+| Loki | Log aggregation |
+| Fluentd | Log collection (DaemonSet) |
+
+Access is via port-forwarding.
+
+**Alerts configured:**
+| Alert | Severity | Description |
+|-------|---------|-------------|
+| PodCrashLooping | critical | Pod restarting frequently |
+| NoBackendPods | critical | No backend replicas available |
+| HTTPErrorsHigh | warning | HTTP 5xx errors > 5% |
+| MongoDBConnectionError | critical | Connection errors in logs (Loki) |
+| MongoDBServerSelectionError | critical | Server selection failures (Loki) |
+| MongoDBAuthenticationError | critical | Auth failures in logs (Loki) |
+| MongoDBTLSErrors | critical | TLS/SSL errors (Loki) |
+
+**Note:** MongoDB Atlas has its own built-in alerting for database-level metrics (disk usage, CPU, memory), configured from UI.
 ---
 
 ## Problems Encountered & Solved
@@ -99,24 +123,3 @@ Throughout the deployment phase, several realistic cloud-engineering constraints
 ### 5. MongoDB Network Access `tlsv1 alert 80`
 **Problem:** The backend threw a generic OpenSSL error: `MongoServerSelectionError: tlsv1 alert internal error (alert number 80)`.
 **Solution:** This cryptic driver error occurs when MongoDB Atlas terminates the handshake because the client IP is not registered on the Atlas Network Access List. Whitelisting the connection (`0.0.0.0/0`) within the Atlas UI fixed it perfectly.
-
----
-![result](result.png "Result")
-
-# Mern Stack project
-
-cd mern-project
-
-## Acceptance Criteria:
-
-1. MongoDB should connected
-2. All endpoints should work
-3. All pages should work
-
-# Python project
-
-cd python-project
-
-## Acceptance Criteria:
-
-1. ETL.py file should run every 1 hour

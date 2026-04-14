@@ -1,0 +1,191 @@
+namespace: monitoring
+
+prometheus:
+  enabled: true
+  fullnameOverride: prometheus
+  alertmanager:
+    enabled: true
+    persistentVolume:
+      enabled: false
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      retention: 15d
+      retentionSize: 10GB
+      storageSpec:
+        emptyDir:
+          medium: Memory
+      ruleSelector: {}
+      ruleNamespaceSelector: {}
+      serviceMonitorSelector: {}
+      podMonitorSelector: {}
+      probeSelector: {}
+  grafana:
+    enabled: true
+    fullnameOverride: grafana
+    adminPassword: prom-operator
+    defaultDashboardsTimezone: utc
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: monitoring
+      datasources:
+        enabled: true
+        searchNamespace: monitoring
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/auth-type: basic
+        nginx.ingress.kubernetes.io/auth-secret: grafana-auth
+        nginx.ingress.kubernetes.io/auth-realm: "Grafana Authentication"
+      hosts:
+        - grafana.local
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus-server.monitoring.svc.cluster.local
+            isDefault: true
+          - name: Loki
+            type: loki
+            access: proxy
+            url: http://loki.monitoring.svc.cluster.local:3100
+    dashboards:
+      default:
+        mern-app:
+          gnetId: 12613
+          revision: 1
+          datasource: Prometheus
+        kubernetes-global:
+          gnetId: 15761
+          revision: 1
+          datasource: Prometheus
+
+prometheusOperator:
+  enabled: true
+  admissionWebhooks:
+    enabled: false
+
+loki:
+  enabled: true
+  fullnameOverride: loki
+  replicaCount: 1
+  persistence:
+    enabled: false
+  config:
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: loki_index_
+    storage_config:
+      boltdb_shipper:
+        shared_store: filesystem
+    limits_config:
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+  serviceMonitor:
+    enabled: true
+
+fluentd:
+  enabled: true
+  fullnameOverride: fluentd
+  kind: DaemonSet
+  env:
+    - name: LOKI_URL
+      value: http://loki.monitoring.svc.cluster.local:3100
+  config:
+    main: |
+      @include /etc/fluent/config.d/*.conf
+      <match **>
+        @type loki
+        url "#{ENV['LOKI_URL']}"
+        flush_interval 10s
+        flush_at_shutdown true
+        buffer_chunk_limit 2M
+        buffer_queue_limit 32
+        retry_max_interval 300
+        retry_timeout 72h
+      </match>
+    container.conf: |
+      <source>
+        @type tail
+        @id input_tail_container_id
+        path /var/log/containers/*.log
+        pos_file /var/log/fluentd-containers.log.pos
+        tag "#{ENV['FLUENTD_TAG']}"
+        read_from_head true
+        <parse>
+          @type multi_format
+          <pattern>
+            format json
+            time_key time
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+          </pattern>
+          <pattern>
+            format /^(?<time>.+) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
+            time_format %Y-%m-%dT%H:%M:%S.%N%z
+          </pattern>
+        </parse>
+      </source>
+      <filter **>
+        @type kubernetes_metadata
+        @id filter_kube_metadata
+        skip_container_metadata true
+        skip_master_namespace true
+        skip_symlinks true
+      </filter>
+      <match **>
+        @type loki
+        url "#{ENV['LOKI_URL']}"
+        flush_interval 10s
+        flush_at_shutdown true
+        line_format json
+        drop_single_key true
+        extract_kubernetes_labels true
+        <label>
+          stream
+          namespace
+          container_name
+          pod_name
+        </label>
+      </match>
+  serviceMonitor:
+    enabled: true
+
+alertRules:
+  enabled: true
+  groups:
+    - name: mern-alerts
+      rules:
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total{namespace="mern-project"}[5m]) > 0.1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash looping"
+            description: "Pod is restarting frequently"
+        - alert: NoBackendPods
+          expr: kube_deployment_status_replicas_available{namespace="mern-project",deployment="mern-backend"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No backend pods available"
+            description: "Backend deployment has no available replicas"
+        - alert: HTTPErrorsHigh
+          expr: sum(rate(http_requests_total{namespace="mern-project",status=~"5.."}[5m])) / sum(rate(http_requests_total{namespace="mern-project"}[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High HTTP error rate"
+            description: "HTTP 5xx errors are above 5%"

@@ -1,0 +1,48 @@
+fullnameOverride: fluentd
+kind: DaemonSet
+env:
+  - name: LOKI_URL
+    value: http://loki.monitoring.svc.cluster.local:3100
+  - name: FLUENTD_TAG
+    value: kubernetes
+config:
+  main: |
+    @include /etc/fluent/config.d/*.conf
+  container.conf: |
+    <source>
+      @type tail
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kubernetes.*
+      read_from_head true
+      <parse>
+        @type multi_format
+        <pattern>
+          format json
+          time_key time
+          time_format %Y-%m-%dT%H:%M:%S.%NZ
+        </pattern>
+        <pattern>
+          format /^(?<time>.+) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
+          time_format %Y-%m-%dT%H:%M:%S.%N%z
+        </pattern>
+      </parse>
+    </source>
+    <filter kubernetes.**>
+      @type kubernetes_metadata
+      skip_container_metadata true
+      skip_master_namespace true
+    </filter>
+    <match kubernetes.**>
+      @type loki
+      url "#{ENV['LOKI_URL']}"
+      flush_interval 10s
+      flush_at_shutdown true
+      line_format json
+      <label>
+        stream
+        namespace
+        container_name
+        pod_name
+      </label>
+    </match>

@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: LokiAlertingRule
+metadata:
+  name: mongodb-log-alerts
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: loki
+    chart: monitoring
+    heritage: Helm
+spec:
+  groups:
+    - name: mongodb-log-alerts
+      rules:
+        - alert: MongoDBConnectionError
+          expr: |
+            sum(count_over_time({namespace="mern-project", container="backend"} | json | __error__!="JSONParserErr" | line_format "{{.log}}" | regexp `(?i)(mongodb|mongo)(.*)(connect|connection|timeout|ECONNREFUSED|ETIMEDOUT)`[5m])) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MongoDB connection error in logs"
+            description: "MongoDB connection errors detected in backend logs. Check Atlas network access whitelist and cluster status."
+        - alert: MongoDBServerSelectionError
+          expr: |
+            sum(count_over_time({namespace="mern-project", container="backend"} | json | __error__!="JSONParserErr" | line_format "{{.log}}" | regexp `(?i)MongoServerSelectionError|serverSelectionTimeout`[5m])) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MongoDB server selection failure"
+            description: "Backend cannot select MongoDB server. Verify Atlas cluster is running and accessible."
+        - alert: MongoDBAuthenticationError
+          expr: |
+            sum(count_over_time({namespace="mern-project", container="backend"} | json | __error__!="JSONParserErr" | line_format "{{.log}}" | regexp `(?i)(auth|authentication|unauthorized|failed to authenticate)`[5m])) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MongoDB authentication failure"
+            description: "MongoDB authentication errors detected. Check credentials in secrets."
+        - alert: MongoDBTLSErrors
+          expr: |
+            sum(count_over_time({namespace="mern-project", container="backend"} | json | __error__!="JSONParserErr" | line_format "{{.log}}" | regexp `(?i)(tls|ssl|tlsv1|ssl handshake)`[5m])) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MongoDB TLS/SSL errors"
+            description: "TLS handshake failures with MongoDB. Verify SSL/TLS configuration and Atlas requirements."

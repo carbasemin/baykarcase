@@ -1,0 +1,30 @@
+{{- if .Values.alertRules.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mern-alerts
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+    chart: monitoring
+    heritage: Helm
+spec:
+  groups:
+{{- range .Values.alertRules.groups }}
+    - name: {{ .name }}
+      rules:
+{{- range .rules }}
+        - alert: {{ .alert }}
+          expr: {{ .expr }}
+          for: {{ .for }}
+          labels:
+{{- range $key, $value := .labels }}
+            {{ $key }}: {{ $value }}
+{{- end }}
+          annotations:
+{{- range $key, $value := .annotations }}
+            {{ $key }}: {{ $value }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

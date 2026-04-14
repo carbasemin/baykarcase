@@ -1,0 +1,42 @@
+prometheus:
+  enabled: true
+  fullnameOverride: prometheus
+  alertmanager:
+    enabled: true
+    persistentVolume:
+      enabled: false
+  prometheus:
+    prometheusSpec:
+      retention: 15d
+      storageSpec:
+        emptyDir:
+          medium: Memory
+      ruleSelector: {}
+      ruleNamespaceSelector: {}
+      serviceMonitorSelector: {}
+      podMonitorSelector: {}
+grafana:
+  enabled: true
+  fullnameOverride: grafana
+  adminPassword: prom-operator
+  defaultDashboardsTimezone: utc
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: monitoring
+    datasources:
+      enabled: true
+      searchNamespace: monitoring
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus-server.monitoring.svc.cluster.local
+          isDefault: true
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki.monitoring.svc.cluster.local:3100
