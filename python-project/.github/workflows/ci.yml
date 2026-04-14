@@ -1,0 +1,51 @@
+name: CI — Build & Push Python ETL to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-python-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push — Python ETL
+        uses: docker/build-push-action@v5
+        with:
+          context: ./python-project
+          file: ./python-project/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/python-etl:latest
+            ${{ steps.ecr-login.outputs.registry }}/python-etl:${{ github.sha }}
+          cache-from: type=gha,scope=python-etl
+          cache-to: type=gha,mode=max,scope=python-etl

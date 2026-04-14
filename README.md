@@ -104,16 +104,16 @@ Express backend (`server.mjs`) `/api` prefix’ini doğrudan dinleyecek şekilde
 **Problem:**
 
 * Terraform IAM rolü oluşturdu ama ServiceAccount oluşturmadı
-* ALB pod’ları ayağa kalkamadı
-* Buna rağmen webhook Kubernetes API’ye kayıt oldu
-* External Secrets kurulumu sırasında webhook’a erişilemediği için Helm timeout verdi
+* ALB pod'ları ayağa kalkamadı
+* Buna rağmen webhook Kubernetes API'ye kayıt oldu
+* External Secrets kurulumu sırasında webhook'a erişilemediği için Helm timeout verdi
 
 **Çözüm:**
 
 1. Helm ile ALB controller tekrar kuruldu (`serviceAccount.create=true`)
 2. IAM role ARN annotation ile bağlandı
-3. Takılan ReplicaSet’ler silindi
-4. Yeni pod’lar düzgün şekilde ayağa kalktı
+3. Takılan ReplicaSet'ler silindi
+4. Yeni pod'lar düzgün şekilde ayağa kalktı
 5. Webhook hazır olduktan sonra External Secrets sorunsuz kuruldu
 
 ---
@@ -124,7 +124,23 @@ Express backend (`server.mjs`) `/api` prefix’ini doğrudan dinleyecek şekilde
 Uygulama `https://` üzerinden açılırken timeout veriyor.
 
 **Sebep:**
-Daha önceki işlerimden dolayı Cloudflare SSL modu “Full/Strict” idi, CF tarafi ALB’ye HTTPS ile bağlanmaya çalıştı o yuzden.
+Daha önceki işlerimden dolayı Cloudflare SSL modu "Full/Strict" idi, CF tarafi ALB'ye HTTPS ile bağlanmaya çalıştı o yuzden.
 
 **Çözüm:**
-Cloudflare SSL modunu “Flexible” yaptim. Client istek atarken TLS kullanıyor, Cloudflare ALB'ye attığı istekte TLS kullanmıyor. AWS'ten sertifika talep edip ALB'ye takmak yerine yine basitleştirdim.
+Cloudflare SSL modunu "Flexible" yaptim. Client istek atarken TLS kullanıyor, Cloudflare ALB'ye attığı istekte TLS kullanmıyor. AWS'ten sertifika talep edip ALB'ye takmak yerine yine basitleştirdim.
+
+---
+
+## Python ETL CronJob
+
+Python tarafında basit bir ETL script'i var, her saat çalışacak şekilde CronJob olarak deploy edildi.
+
+* **Imaj:** Python 3.12 slim
+* **Namespace:** `python-etl`
+* **Schedule:** Her saat başı (`0 * * * *`)
+* **CI:** Ana CI'den ayrı, kendi workflow'u var (`python-project/.github/workflows/ci.yml`)
+
+**Alarmlar:**
+
+* CronJobFailed → CronJob hatası
+* CronJobNotRunning → Son 1 saatte çalışmadı

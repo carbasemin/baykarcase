@@ -189,3 +189,21 @@ alertRules:
           annotations:
             summary: "High HTTP error rate"
             description: "HTTP 5xx errors are above 5%"
+    - name: python-etl-alerts
+      rules:
+        - alert: CronJobFailed
+          expr: kube_job_failed{namespace="python-etl",job_name=~"python-etl.*"} == 1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Python ETL CronJob failed"
+            description: "The Python ETL CronJob has failed"
+        - alert: CronJobNotRunning
+          expr: time() - kube_job_status_start_time{namespace="python-etl",job_name=~"python-etl.*"} > 3600
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Python ETL CronJob not running"
+            description: "The Python ETL CronJob hasn't run in the last hour"

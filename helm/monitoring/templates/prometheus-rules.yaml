@@ -2,7 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: mern-alerts
+  name: {{ .Values.alertRules.name | default "mern-alerts" }}
   namespace: {{ .Values.namespace }}
   labels:
     app: prometheus
@@ -11,12 +11,12 @@ metadata:
 spec:
   groups:
 {{- range .Values.alertRules.groups }}
-    - name: {{ .name }}
+    - name: {{ .name | default "default-alerts" }}
       rules:
 {{- range .rules }}
         - alert: {{ .alert }}
           expr: {{ .expr }}
-          for: {{ .for }}
+          for: {{ .for | default "0m" }}
           labels:
 {{- range $key, $value := .labels }}
             {{ $key }}: {{ $value }}
@@ -24,6 +24,7 @@ spec:
           annotations:
 {{- range $key, $value := .annotations }}
             {{ $key }}: {{ $value }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
