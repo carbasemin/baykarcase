@@ -1,5 +1,8 @@
 services:
   database:
+    # mongo 8.0 has a known issue with my kernel.
+    # I was getting random segfaults.
+    # Hence 7.0
     image: mongo:7.0
     restart: unless-stopped
     ports:
@@ -30,7 +33,6 @@ services:
       context: ./mern-project/client
       dockerfile: Dockerfile
       args:
-        # Since frontend runs in the user's browser, it accesses the backend via localhost
         - REACT_APP_API_URL=http://localhost:5050
     ports:
       - "127.0.0.1:80:80"
